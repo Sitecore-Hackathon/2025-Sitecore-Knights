@@ -1,0 +1,62 @@
+/* Global body styles */
+.body {
+    font-family: Arial, sans-serif;
+    background-color: #ffffff; /* White background for the entire page */
+    color: #000000; /* Black text color for contrast */
+    margin: 0;
+    padding: 20px;
+}
+
+/* Container styles */
+.container {
+    max-width: 800px;
+    margin: auto;
+}
+
+/* Title box styles */
+.title-box {
+    background-color: black;
+    color: white;
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+/* Heading styles */
+.title-box h1 {
+    font-size: 28px;
+    margin: 0;
+    text-shadow: 0 0 10px rgba(0, 123, 255, 0.8), 0 0 20px rgba(0, 123, 255, 0.6), 0 0 30px rgba(0, 123, 255, 0.4);
+}
+
+/* Image styles */
+.image {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    margin: 20px 0;
+    filter: drop-shadow(0px 0px 15px rgba(0, 123, 255, 0.7));
+    transition: transform 0.3s ease-in-out;
+}
+
+.image:hover {
+    transform: scale(1.05);
+}
+
+/* Description box styles */
+.description-box {
+    padding: 15px;
+    border: 2px solid black; /* Black border for description box */
+    border-radius: 10px; /* Rounded corners */
+    margin-top: 20px;
+}
+
+/* Link styles */
+.a {
+    color: #4dabf7;
+    text-decoration: none;
+}
+
+.a:hover {
+    text-decoration: underline;
+}
