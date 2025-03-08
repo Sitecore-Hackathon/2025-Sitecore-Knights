@@ -12,6 +12,8 @@ import { JssConfig } from 'lib/config';
  */
 export const createGraphQLClientFactory = (config: JssConfig) => {
   let clientConfig: GraphQLRequestClientFactoryConfig;
+  config.graphQLEndpoint = 'https://xmcloudcm.localhost/sitecore/api/graph/edge';
+  config.sitecoreApiKey = '9a87e06a-04bc-4dc5-963b-44004c15170a';
 
   if (config.sitecoreEdgeContextId) {
     clientConfig = {
