@@ -78,17 +78,115 @@ if ($selectedItem.Extension -eq "docx") {
                     "Content-Type" = "multipart/form-data; boundary=$boundary"
                 }
 
+                $response = {};
+
                 # Enviar el archivo a la API
                 try {
                     $response = Invoke-RestMethod -Uri $apiUrl -Method Post -Headers $headers -Body $fullBodyBytes
                     Write-Host "Response from API: $response"
                 } catch {
                     Write-Host "Error calling API: $_"
+                    exit
                 }
+                
+                # Define the template path
+                $generatedPage = "/sitecore/templates/Project/sites/Generated Page"
+                $dataTemplate = "/sitecore/templates/Foundation/Experience Accelerator/Local Datasources/Page Data"
+                $RTFbasicComponent = "/sitecore/templates/Project/nextjs-starter/Basic Components/Rich Text Basic Component"
+                $ImageComponent = "/sitecore/templates/Project/nextjs-starter/Basic Components/Image Basic Component"
+                
+                $homeItem = "/sitecore/content/sites/nextjs-starter/Home"
+                
+                $data = $response.content | ConvertFrom-Json
+                
+                # Define the item name based on title
+                $itemName = [Sitecore.Data.Items.ItemUtil]::ProposeValidItemName($data.masthead.title)
+                
+                # Create the item in Sitecore
+                $parentItem = Get-Item -Path $homeItem
+                if ($parentItem -ne $null) {
+                    $newItem = New-Item -Path $parentItem.Paths.FullPath -Name $itemName -ItemType $generatedPage
+                    if ($newItem -ne $null) {
+                		$newItemData = New-Item -Path $newItem.Paths.FullPath -Name "Data" -ItemType $dataTemplate
+                		
+                		if ($newItemData -ne $null) {
+                			
+                			$newRtfBasicComponent = New-Item -Path $newItemData.Paths.FullPath -Name "New Rich Text Basic Component" -ItemType $RTFbasicComponent
+                			$newImageComponent = New-Item -Path $newItemData.Paths.FullPath -Name "New Image Component" -ItemType $ImageComponent
+                			
+                			if (($newRtfBasicComponent -ne $null) -and ($newImageComponent -ne $null)) {
+                				$newItem.Editing.BeginEdit()
+                				$newItemData.Editing.BeginEdit()
+                				$newRtfBasicComponent.Editing.BeginEdit()
+                				$newItem["Masthead Title"] = $data.masthead.title
+                				$newItem["Masthead Description"] = $data.masthead.description
+                				$newRtfBasicComponent["Rich Text Field"] = $data.rich_text
+                				#$newImageComponent["Image Field"] = $data.image
+                				
+                				$layoutField = "{96E5F4BA-A2CF-4A4C-A4E7-64DA88226362}"  # Standard Layout field ID
+                				$layout = [Sitecore.Layouts.LayoutDefinition]::Parse($newItem[$layoutField])
+                
+                				$RTFrendering = New-Object Sitecore.Layouts.RenderingDefinition
+                				$RTFrendering.ItemID = "{6282BB17-3DC5-4DA3-9E6D-780D472BB039}"
+                				$RTFrendering.Datasource = $newRtfBasicComponent.Paths.FullPath
+                				
+                				$ImageRendering = New-Object Sitecore.Layouts.RenderingDefinition
+                				$ImageRendering.ItemID = "{1572AD3F-9732-440E-92EB-031B44B3B850}"
+                				$ImageRendering.Datasource = $newImageComponent.Paths.FullPath
+                				
+                				
+                				# Parameters
+                                $mediaLibraryPath = "/sitecore/media library/Images/MyNewImage"
+                                $now = Get-Date
+                                $imageName = "MyImage" + $now
+                                $base64String = $data.images[0]  # Replace with actual Base64 string
+                                $mediaExtension = "jpg"  # Change based on your image type (jpg, png, etc.)
+                                $database = [Sitecore.Configuration.Factory]::GetDatabase("master")
+                                
+                                # Your base64 string with the "data:image/jpeg;base64," prefix
+                                
+                                # Remove the prefix ("data:image/jpeg;base64,") if it exists
+                                $base64StringCleaned = $base64String -replace '^data:image\/jpeg;base64,', ''
+                                
+                                # Now convert the base64 string to bytes
+                                $bytes = [Convert]::FromBase64String($base64StringCleaned)
+                                
+                                # Create a new Media Item
+                                $mediaItem = New-Item -Path $mediaLibraryPath -ItemType "jpeg" -Name $imageName -Language "en"
+                                
+                                # Set the image content
+                                $media = [Sitecore.Resources.Media.MediaManager]::GetMedia($mediaItem)
+                                $stream = New-Object System.IO.MemoryStream(, $bytes)
+                                $media.SetStream($stream, $mediaExtension)
+                                $mediaItem.Editing.EndEdit()
+                				
+                
+
+                				# Define the placeholder (this would be your content area, e.g., "main-content")
+                                $placeholderKeyRTF = "/headless-main/sxa-generated-content/gs-rtf-1"
+                                $placeholderKeyimage = "/headless-main/sxa-generated-content/gs-image-1"
+                                
+                                Add-Rendering -Item $newItem -PlaceHolder $placeholderKeyRTF -Instance $RTFrendering -Parameter @{ "Reset Caching Options" = "1" } -FinalLayout
+                                Add-Rendering -Item $newItem -PlaceHolder $placeholderKeyimage -Instance $RTFrendering -Parameter @{ "Reset Caching Options" = "1" } -FinalLayout
+
+                				
+                				$newRtfBasicComponent.Editing.EndEdit()
+                				$newItemData.Editing.EndEdit()
+                				$newItem.Editing.EndEdit()
+                				Write-Host "Item created successfully: $($newItem.Paths.FullPath)"
+			}
+		}
+    }
+	else {
+        Write-Host "Failed to create item."
+    }
+}
+else {
+    Write-Host "Parent path not found."
+}
             } else {
                 Write-Host "Unable to retrieve media for the selected item."
             }
-            
         } else {
             Write-Host "Selected item is not a valid media item."
         }
